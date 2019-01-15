@@ -3,9 +3,29 @@ var router = express.Router();
 var User = require('../models/user');
 
 // GET /login
-
+router.get('/login', function(req, res, next) {
+  return res.render('login', {title: 'login'});
+});
 // POST /login
+router.post('/login', function(req, res, next) {
+  if (req.body.email && req.body.password) {
+    User.authenticate(req.body.email, req.body.password, function(error, user) {
+      if (error || !user) {
+        let err = new Error('Wrong email or password');
+        err.status = 401;
+        return next(err);
+      } else {
+        req.session.userId = user._id;
+        return res.redirect('/profile');
+      }
+    });
 
+  } else {
+    var err = new Error('Email and password are required.');
+    err.status = 401;
+    return next(err);
+  }
+});
 
 // GET /register
 router.get('/register', (req, res, next) => {
@@ -39,6 +59,7 @@ router.post('/register', (req, res, next) => {
           if (error) {
             return next(error);
           } else {
+            req.session.userId = user._id;
             return res.redirect('/profile');
           }
         });
