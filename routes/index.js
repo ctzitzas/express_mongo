@@ -1,15 +1,11 @@
 var express = require('express');
 var router = express.Router();
 var User = require('../models/user');
+var mid = require('../middleware');
 
 // GET /profile
-router.get('/profile', function(req, res, next) {
-  if (!req.session.userId) {
-    var err = new Error('You are not authorised to view this page.');
-    err.status = 403;
-    return next(err);
-  }
-  User.findById(req.session.userId).exec(function(error, user) {
+router.get('/profile', mid.requiresLogin, function (req, res, next) {
+  User.findById(req.session.userId).exec(function (error, user) {
     if (error) {
       return next(error);
     } else {
@@ -22,15 +18,31 @@ router.get('/profile', function(req, res, next) {
   });
 });
 
+// GET /logout
+router.get('/logout', function (req, res, next) {
+  if (req.session) {
+    // delete session object
+    req.session.destroy(function (err) {
+      if (err) {
+        return next(err);
+      } else {
+        return res.redirect('/');
+      }
+    });
+  }
+});
+
 // GET /login
-router.get('/login', function(req, res, next) {
-  return res.render('login', {title: 'login'});
+router.get('/login', mid.loggedOut, function (req, res, next) {
+  return res.render('login', {
+    title: 'login'
+  });
 });
 
 // POST /login
-router.post('/login', function(req, res, next) {
+router.post('/login', function (req, res, next) {
   if (req.body.email && req.body.password) {
-    User.authenticate(req.body.email, req.body.password, function(error, user) {
+    User.authenticate(req.body.email, req.body.password, function (error, user) {
       if (error || !user) {
         let err = new Error('Wrong email or password');
         err.status = 401;
@@ -49,61 +61,69 @@ router.post('/login', function(req, res, next) {
 });
 
 // GET /register
-router.get('/register', (req, res, next) => {
-  return res.render('register', {title: "Sign Up"});
+router.get('/register', mid.loggedOut, (req, res, next) => {
+  return res.render('register', {
+    title: "Sign Up"
+  });
 });
 
 // POST /register
 router.post('/register', (req, res, next) => {
-   if (req.body.email &&
-      req.body.name &&
-      req.body.favoriteBook &&
-      req.body.password &&
-      req.body.confirmPassword) {
-        // confirm that user confirmed password
-        if (req.body.password !== req.body.confirmPassword) {
-          let err = new Error('Passwords do not match!');
-          err.status = 400;
-          return next(err);
-        }
+  if (req.body.email &&
+    req.body.name &&
+    req.body.favoriteBook &&
+    req.body.password &&
+    req.body.confirmPassword) {
+    // confirm that user confirmed password
+    if (req.body.password !== req.body.confirmPassword) {
+      let err = new Error('Passwords do not match!');
+      err.status = 400;
+      return next(err);
+    }
 
-        // create object with form input
-        var userData = {
-          email: req.body.email,
-          name: req.body.name,
-          favoriteBook: req.body.favoriteBook,
-          password: req.body.password
-        };
+    // create object with form input
+    var userData = {
+      email: req.body.email,
+      name: req.body.name,
+      favoriteBook: req.body.favoriteBook,
+      password: req.body.password
+    };
 
-        // use schema'a 'create' method to insert document into Mongo
-        User.create(userData, (error, user) => {
-          if (error) {
-            return next(error);
-          } else {
-            req.session.userId = user._id;
-            return res.redirect('/profile');
-          }
-        });
+    // use schema'a 'create' method to insert document into Mongo
+    User.create(userData, (error, user) => {
+      if (error) {
+        return next(error);
       } else {
-        let err = new Error('All fields required.');
-        err.status = 400;
-        return next(err);
+        req.session.userId = user._id;
+        return res.redirect('/profile');
       }
+    });
+  } else {
+    let err = new Error('All fields required.');
+    err.status = 400;
+    return next(err);
+  }
 });
 
 // GET /
-router.get('/', function(req, res, next) {
-  return res.render('index', { title: 'Home' });
+router.get('/', function (req, res, next) {
+  return res.render('index', {
+    title: 'Home'
+  });
 });
 
 // GET /about
-router.get('/about', function(req, res, next) {
-  return res.render('about', { title: 'About' });
+router.get('/about', function (req, res, next) {
+  return res.render('about', {
+    title: 'About'
+  });
 });
 
 // GET /contact
-router.get('/contact', function(req, res, next) {
-  return res.render('contact', { title: 'Contact' });
+router.get('/contact', function (req, res, next) {
+  return res.render('contact', {
+    title: 'Contact'
+  });
 });
 
 module.exports = router;
