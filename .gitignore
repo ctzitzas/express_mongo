@@ -1,2 +1,6 @@
 .DS_Store
 /node_modules
+/docs
+example.com+5-key.pem
+example.com+5.pem
+.gitignore

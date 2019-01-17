@@ -1,3 +1,10 @@
+var fs = require('fs');
+var http = require('http');
+var https = require('https');
+var privateKey = fs.readFileSync('./example.com+5-key.pem');
+var certificate = fs.readFileSync('./example.com+5.pem');
+var credentials = {key: privateKey, cert: certificate};
+
 var express = require('express');
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
@@ -64,6 +71,13 @@ app.use(function (err, req, res, next) {
 });
 
 // listen on port 3000
-app.listen(3000, function () {
-  console.log('Express app listening on port 3000');
-});
+// app.listen(3000, function () {
+//   console.log('Express app listening on port 3000');
+// });
+
+// http and https servers listening on ports 8080 8443
+var httpServer = http.createServer(app);
+var httpsServer = https.createServer(credentials, app);
+
+httpServer.listen(8080);
+httpsServer.listen(8443);
